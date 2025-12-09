@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Wrocław Public Transport – Closest Departures</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* Small convenience style for the leaflet popups grouping */
+      .popup-stop-name {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+      }
+      .popup-line {
+        font-size: 0.8rem;
+        margin-bottom: 0.2rem;
+      }
+      .popup-line span.time {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+          monospace;
+      }
+      .popup-link {
+        font-size: 0.75rem;
+        color: #2563eb;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div>
+          <span class="badge">Prompt Engineering Lab – Part II</span>
+          <h1>Plan your trip in Wrocław</h1>
+          <p>
+            Click on the map to choose <strong>start</strong> and <strong>destination</strong>, then search for
+            the closest public transport departures.
+          </p>
+        </div>
+
+        <div class="field-group">
+          <label>Selection mode</label>
+          <div class="button-row">
+            <button type="button" id="btnStartMode" class="secondary active">Set start on map</button>
+            <button type="button" id="btnEndMode" class="secondary">Set destination on map</button>
+          </div>
+          <p class="hint">Current mode determines which marker is placed when you click the map.</p>
+        </div>
+
+        <div class="field-group">
+          <label for="startInput">Start coordinates</label>
+          <input id="startInput" type="text" placeholder="lat, lon" />
+        </div>
+
+        <div class="field-group">
+          <label for="endInput">Destination coordinates</label>
+          <input id="endInput" type="text" placeholder="lat, lon" />
+        </div>
+
+        <div class="field-group">
+          <label for="timeInput">Departure time</label>
+          <input id="timeInput" type="datetime-local" />
+        </div>
+
+        <div class="field-group">
+          <label for="limitInput">Max departures</label>
+          <input id="limitInput" type="number" min="1" max="15" value="5" />
+        </div>
+
+        <div class="field-group">
+          <label for="radiusInput">Search radius</label>
+          <select id="radiusInput">
+            <option value="200">200 m</option>
+            <option value="500">500 m</option>
+            <option value="1000" selected>1 km</option>
+            <option value="2000">2 km</option>
+            <option value="5000">5 km</option>
+          </select>
+        </div>
+
+        <div class="button-row">
+          <button type="button" id="btnSearch" class="primary">Find closest departures</button>
+          <button type="button" id="btnClear" class="secondary">Clear results</button>
+        </div>
+
+        <div id="errorBox" class="error" style="display: none"></div>
+
+        <div class="results">
+          <div class="hint" id="resultsHint">
+            Results will appear here and on the map. Click on a trip in the popup to visualize its full route.
+          </div>
+          <div id="resultsList"></div>
+        </div>
+      </aside>
+
+      <main class="map-container">
+        <div id="map"></div>
+      </main>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="app.js"></script>
+  </body>
+</html>
