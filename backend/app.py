@@ -2,7 +2,8 @@ import os
 from datetime import datetime, timezone
 from flask import Flask, request, jsonify, send_from_directory
 
-from .db import query_closest_departures, get_trip_details
+from .db import query_closest_departures, get_trip_details, compute_best_route
+
 
 # static_folder points to ../frontend
 app = Flask(
@@ -105,6 +106,67 @@ def trip_details(city, trip_id):
     }
 
     return jsonify({"metadata": metadata, "trip_details": details})
+
+@app.route("/public_transport/city/<city>/best_route")
+def best_route(city):
+    if city.lower() != "wroclaw":
+        return jsonify({"error": "City not supported"}), 404
+
+    start_coordinates = request.args.get("start_coordinates")
+    end_coordinates = request.args.get("end_coordinates")
+    start_time = request.args.get("start_time")
+    max_walk_m = request.args.get("max_walk_m", "1000")
+    walk_speed = request.args.get("walk_speed_m_s", "1.2")
+
+    start = _parse_coordinates(start_coordinates)
+    end = _parse_coordinates(end_coordinates)
+
+    if not start or not end:
+        return (
+            jsonify(
+                {
+                    "error": "start_coordinates and end_coordinates are required in 'lat,lon' format",
+                    "example": "51.1079,17.0385",
+                }
+            ),
+            400,
+        )
+
+    try:
+        max_walk_m = float(max_walk_m)
+        walk_speed = float(walk_speed)
+    except ValueError:
+        return jsonify({"error": "max_walk_m and walk_speed_m_s must be numbers"}), 400
+
+    if start_time is None:
+        start_time = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+    route = compute_best_route(
+        city,
+        start,
+        end,
+        start_time_iso=start_time,
+        max_walk_m=max_walk_m,
+        walk_speed_m_s=walk_speed,
+    )
+
+    if route is None:
+        return jsonify({"error": "No route found"}), 404
+
+    metadata = {
+        "self": request.path + "?" + request.query_string.decode("utf-8"),
+        "city": city,
+        "query_parameters": {
+            "start_coordinates": start_coordinates,
+            "end_coordinates": end_coordinates,
+            "start_time": start_time,
+            "max_walk_m": max_walk_m,
+            "walk_speed_m_s": walk_speed,
+        },
+    }
+
+    return jsonify({"metadata": metadata, "route": route})
+
 
 
 if __name__ == "__main__":
