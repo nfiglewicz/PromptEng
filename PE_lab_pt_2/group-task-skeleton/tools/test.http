@@ -1,0 +1,4 @@
+GET http://localhost:5001/public_transport/city/Wroclaw/closest_departures?start_coordinates=51.1078852,17.0385376&end_coordinates=51.0994745,17.0336621&start_time=2023-10-10T10:00:00Z&limit=3
+
+###
+GET http://localhost:5001/public_transport/city/Wroclaw/trip/3_14613060

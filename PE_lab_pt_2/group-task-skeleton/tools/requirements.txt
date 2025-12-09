@@ -1,0 +1,6 @@
+requests~=2.32.3
+google~=3.0.0
+langchain-core~=0.3.61
+protobuf~=6.31.0
+langchain-google-genai~=2.1.4
+pillow~=11.2.1
