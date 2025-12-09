@@ -177,7 +177,6 @@ window.TransportApp = (function () {
     const rideLegs = route.legs.filter((leg) => leg.type === "ride");
     const walkLegs = route.legs.filter((leg) => leg.type === "walk");
 
-    // Fetch trip details for each distinct trip_id
     const city = "Wroclaw";
     const tripCache = {};
     await Promise.all(
@@ -199,14 +198,13 @@ window.TransportApp = (function () {
 
     const layers = [];
 
-    // Draw ride legs following GTFS stops if possible
+    // Ride legs
     rideLegs.forEach((leg) => {
       const trip = tripCache[leg.trip_id];
       let latlngs = [];
 
       if (trip && Array.isArray(trip.stops)) {
         const stops = trip.stops;
-        // try to find indices by stop_id if present, fallback to name
         let startIdx = stops.findIndex(
           (s) => s.stop_id === leg.from.stop_id || s.name === leg.from.name
         );
@@ -229,7 +227,6 @@ window.TransportApp = (function () {
             .map((s) => [s.coordinates.latitude, s.coordinates.longitude]);
         }
       } else {
-        // fallback: simple straight line
         latlngs = [
           [leg.from.coordinates.latitude, leg.from.coordinates.longitude],
           [leg.to.coordinates.latitude, leg.to.coordinates.longitude],
@@ -239,11 +236,11 @@ window.TransportApp = (function () {
       const pl = L.polyline(latlngs, {
         weight: 5,
         opacity: 0.9,
-      }).addTo(state.map);
+      });
       layers.push(pl);
     });
 
-    // Draw walking legs as dashed lines
+    // Walk legs
     walkLegs.forEach((leg) => {
       const fromCoord = leg.from.coordinates;
       const toCoord = leg.to.coordinates;
@@ -256,16 +253,17 @@ window.TransportApp = (function () {
       const pl = L.polyline(latlngs, {
         weight: 3,
         dashArray: "6 6",
-      }).addTo(state.map);
+      });
       layers.push(pl);
     });
 
     if (layers.length > 0) {
-      const group = L.featureGroup(layers);
+      const group = L.featureGroup(layers).addTo(state.map);
       state.bestRouteLayer = group;
       state.map.fitBounds(group.getBounds(), { padding: [40, 40] });
     }
   }
+
 
   async function fetchBestRoute() {
     hideError();
