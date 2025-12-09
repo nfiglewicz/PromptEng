@@ -4,11 +4,11 @@ import os
 import sqlite3
 import pytest
 from datetime import date
-from server import app
+#from server import app
 
 # Change this import to match your app module
 # e.g., from server import app as flask_app
-# from app import app as flask_app  # <-- adjust if needed
+from backend import app as flask_app  # <-- adjust if needed
 
 DB_TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS stops (
@@ -92,7 +92,7 @@ def test_db_path(tmp_path_factory):
 @pytest.fixture(scope="session")
 def app(test_db_path, monkeypatch):
     # Monkeypatch module variable `DB_PATH` used by the app
-    import app as app_module  # adjust if your app module is different
+    from backend import app as app_module  # adjust if your app module is different
     monkeypatch.setattr(app_module, "DB_PATH", test_db_path, raising=False)
 
     # Optional: restrict supported cities during tests
@@ -108,4 +108,4 @@ def client(app):
 
 @pytest.fixture()
 def today_iso():
-    return date.today().
+    return date.today()

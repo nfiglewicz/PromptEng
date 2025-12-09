@@ -68,5 +68,6 @@ def test_closest_departures_unsupported_city(client, today_iso):
         "start_time": f"{today_iso}T08:30:00Z",
     }
     resp = client.get(BASE.format(city=city), query_string=params)
-    assert resp.status_code    assert resp.status_code == 404
+    assert resp.status_code
+    assert resp.status_code == 404
     payload = resp.get_json()
