@@ -5,7 +5,7 @@ import sqlite3
 import pytest
 from datetime import date
 
-# 🔁 Change this import to match your app module
+# Change this import to match your app module
 # e.g., from server import app as flask_app
 from app import app as flask_app  # <-- adjust if needed
 
