@@ -124,6 +124,14 @@ window.TransportApp = (function () {
     return value + ":00Z";
   }
 
+  function setDepartureTimeToNow() {
+    const now = new Date();
+    now.setSeconds(0, 0);
+    // datetime-local używa lokalnej strefy, więc tak samo jak wcześniej:
+    const local = now.toISOString().slice(0, 16);
+    document.getElementById("timeInput").value = local;
+  }
+
   function groupDeparturesByStop(departures) {
     const groups = {};
     departures.forEach((d) => {
@@ -279,6 +287,7 @@ window.TransportApp = (function () {
     }
 
     const iso = getIsoFromDatetimeLocal(timeInput);
+
 
     const params = {
       start_coordinates: startInput,
@@ -522,7 +531,14 @@ window.TransportApp = (function () {
 
 
   function initControls() {
-    document.getElementById("btnStartMode").addEventListener("click", () => setMode("start"));
+    document.getElementById("btnStartMode").addEventListener("click", () => {
+      setMode("start");
+      setDepartureTimeToNow(); // USTAW departure time na teraz
+      clearRouteShapes();      // CLEAR dla trasy (linie z mapy)
+      // jeśli chcesz też wyczyścić listę wyników, możesz dodać:
+      // document.getElementById("resultsList").innerHTML = "";
+      // document.getElementById("resultsHint").style.display = "block";
+    });
     document.getElementById("btnEndMode").addEventListener("click", () => setMode("end"));
     document.getElementById("btnSearch").addEventListener("click", fetchClosestDepartures);
     document.getElementById("btnClear").addEventListener("click", clearResults);
