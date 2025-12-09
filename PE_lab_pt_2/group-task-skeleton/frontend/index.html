@@ -1,44 +1,412 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple API Caller</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <title>Wrocław – Odjazdy w 1 km</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Leaflet CSS & JS (CDN) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+   let@1.9.4/dist/leaflet.js"
+    integrity="sha256-Va0CwA4C1Z4nZxy6;
+      --bg: #f6f7fb;
+      --text: #222;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      padding: 12px 16px;
+      background: white;
+      border-bottom: 1px solid #ddd;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 12px;
+      padding: 12px;
+      height: calc(100vh - 60px);
+      box-sizing: border-box;
+    }
+    .panel {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
+      overflow: auto;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .field {
+      margin-bottom: 10px;
+    }
+    .field label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .segmented {
+      display: inline-flex;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .segmented button {
+      padding: 8px 12px;
+      border: none;
+      background: #eee;
+      cursor: pointer;
+    }
+    .segmented button.active {
+      background: #dbe8ff;
+      color: #0b5ed7;
+      font-weight: 700;
+    }
+    .results {
+      margin-top: 10px;
+    }
+    .result {
+      border-top: 1px dashed #ccc;
+      padding-top: 8px;
+      margin-top: 8px;
+    }
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #eef3ff;
+      color: #0b5ed7;
+      font-weight: 700;
+      margin-right: 6px;
+    }
+    .small {
+      font-size: 12px; color: #555;
+    }
+    .footer-note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-<div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl">
-    <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Simple API Caller</h1>
+<body>
+  <header>
+    <h1>Mapa Wrocławia – wybór startu i celu + najbliższe odjazdy (≤1 km)</h1>
+  </header>
 
-    <div class="mb-6">
-        <label for="api-endpoint-selector" class="block text-gray-700 text-sm font-bold mb-2">Select API Endpoint:</label>
-        <select id="api-endpoint-selector"
-                class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <option value="http://localhost:5001/public_transport/city/wroclaw/closest_departures">Closest Departures (Wroclaw)</option>
-            <option value="http://localhost:5001/public_transport/city/wroclaw/trip/3_14613060">Trip Details (Trip ID: 3_14613060)</option>
-        </select>
-        <p class="text-xs text-gray-500 mt-1">
-            Choose an API endpoint to call.
-        </p>
+  <div class="container">
+    <div class="panel">
+      <!-- Sterowanie trybem klikania -->
+      <div class="field">
+        <label>Tryb wyboru na mapie</label>
+        <div class="segmented" id="modeToggle">
+          <button data-mode="start" class="active">Ustaw START</button>
+          <button data-mode="dest">Ustaw CEL</button>
+        </div>
+        <div class="small">Kliknij na mapie, aby wskazać punkt. Start zaznaczony na niebiesko, cel na czerwono.</div>
+      </div>
+
+      <!-- Współrzędne -->
+      <div class="field">
+        <label>START (lat, lon)</label>
+        <input id="startLat" type="text" placeholder="lat" style="width: 48%;" />
+        <input id="startLon" type="text" placeholder="lon" style="width: 48%;" />
+        <div class="small">Możesz też wpisać ręcznie.</div>
+      </div>
+
+      <div class="field">
+        <label>CEL (lat, lon)</label>
+        <input id="destLat" type="text" placeholder="lat" style="width: 48%;" />
+        <input id="destLon" type="text" placeholder="lon" style="width: 48%;" />
+      </div>
+
+      <!-- Czas odjazdu -->
+      <div class="field">
+        <label>Czas odjazdu (domyślnie teraz)</label>
+        <input id="departureTime" type="datetime-local" />
+      </div>
+
+      <!-- Akcje -->
+      <div class="field">
+        <button id="btnSearch" class="btn">Szukaj odjazdów w promieniu 1 km od START</button>
+        <button id="btnReset" class="btn" style="background:#6c757d; margin-left:6px;">Reset znaczników</button>
+      </div>
+
+      <!-- Wyniki -->
+      <div class="results" id="results"></div>
+
+      <div class="footer-note">
+        Dane mapowe © OpenStreetMap contributors. Upewnij się, że endpoint API hackathonu jest ustawiony poniżej.
+      </div>
     </div>
 
-    <button id="call-api-btn"
-            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 ease-in-out transform hover:scale-105">
-        Call API
-    </button>
+    <div id="map"></div>
+  </div>
 
-    <div id="status-message" class="mt-4 text-center text-sm text-gray-600"></div>
+  <script>
+    // ===== KONFIGURACJA API =====
+    // TODO: Podmień na faktyczne API hackathonowe + parametry.
+    const API_BASE_URL = "https://api.example.com/transport/departures"; // placeholder
+    const USE_MOCK = true; // ustaw na false, gdy masz prawdziwy endpoint
+    const SEARCH_RADIUS_METERS = 1000;
 
-    <div class="mt-6">
-        <label for="json-output" class="block text-gray-700 text-sm font-bold mb-2">API Response (JSON):</label>
-        <textarea id="json-output"
-                  class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent h-64 font-mono text-sm"
-                  readonly
-                  placeholder="API response will appear here..."></textarea>
-    </div>
-</div>
+    // ===== INICJALIZACJA MAPY LEAFLET =====
+    const wroclawCenter = [51.107883, 17.038538]; // Wrocław – Rynek
+    const map = L.map("map").setView(wroclawCenter, 13);
 
-<script src="script.js"></script>
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    // Ogranicz widok mapy do bounding box Wrocławia (przykładowe granice)
+    const bounds = L.latLngBounds([50.98, 16.85], [51.25, 17.25]);
+    map.setMaxBounds(bounds);
+    map.on("drag", function () { map.panInsideBounds(bounds, { animate: true }); });
+
+    // ===== MARKERY START/CEL + OKRĄG 1 KM =====
+    let startMarker = null;
+    let destMarker = null;
+    let radiusCircle = null;
+    const startIcon = L.icon({
+      iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+      shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+      iconAnchor: [12, 41], popupAnchor: [1, -34]
+    });
+    const destIcon = L.icon({
+      iconUrl:
+        "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+      shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+      iconAnchor: [12, 41], popupAnchor: [1, -34]
+    });
+
+    // Tryb klikania
+    let currentMode = "start";
+    document.getElementById("modeToggle").addEventListener("click", (e) => {
+      if (e.target.tagName.toLowerCase() === "button") {
+        currentMode = e.target.dataset.mode;
+        Array.from(e.currentTarget.children).forEach(btn => btn.classList.toggle("active", btn.dataset.mode === currentMode));
+      }
+    });
+
+    // Ustaw domyślny czas = teraz (z uwzględnieniem strefy)
+    const dtInput = document.getElementById("departureTime");
+    const now = new Date();
+    const localISO = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
+      .toISOString().slice(0, 16);
+    dtInput.value = localISO;
+
+    // Klik na mapie: ustaw start/cel
+    map.on("click", (e) => {
+      const { lat, lng } = e.latlng;
+      if (currentMode === "start") {
+        if (startMarker) startMarker.remove();
+        startMarker = L.marker([lat, lng], { icon: startIcon }).addTo(map).bindPopup("START");
+        document.getElementById("startLat").value = lat.toFixed(6);
+        document.getElementById("startLon").value = lng.toFixed(6);
+
+        // Okrąg 1 km
+        if (radiusCircle) radiusCircle.remove();
+        radiusCircle = L.circle([lat, lng], { radius: SEARCH_RADIUS_METERS, color: "#0b5ed7" }).addTo(map);
+      } else {
+        if (destMarker) destMarker.remove();
+        destMarker = L.marker([lat, lng], { icon: destIcon }).addTo(map).bindPopup("CEL");
+        document.getElementById("destLat").value = lat.toFixed(6);
+        document.getElementById("destLon").value = lng.toFixed(6);
+      }
+    });
+
+    // Geolokalizacja: ustaw domyślny START jeśli dostępna
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const { latitude, longitude } = pos.coords;
+        if (!startMarker) {
+          startMarker = L.marker([latitude, longitude], { icon: startIcon }).addTo(map).bindPopup("START (Twoja lokalizacja)");
+          map.setView([latitude, longitude], 14);
+          document.getElementById("startLat").value = latitude.toFixed(6);
+          document.getElementById("startLon").value = longitude.toFixed(6);
+          if (radiusCircle) radiusCircle.remove();
+          radiusCircle = L.circle([latitude, longitude], { radius: SEARCH_RADIUS_METERS, color: "#0b5ed7" }).addTo(map);
+        }
+      });
+    }
+
+    // Reset znaczników
+    document.getElementById("btnReset").addEventListener("click", () => {
+      if (startMarker) startMarker.remove();
+      if (destMarker) destMarker.remove();
+      if (radiusCircle) radiusCircle.remove();
+      startMarker = null; destMarker = null; radiusCircle = null;
+      document.getElementById("startLat").value = "";
+      document.getElementById("startLon").value = "";
+      document.getElementById("destLat").value = "";
+      document.getElementById("destLon").value = "";
+      document.getElementById("results").innerHTML = "";
+    });
+
+    // ===== POBIERANIE ODPOWIEDZI Z API =====
+    async function fetchDepartures(lat, lon, departureTimeISO, radiusMeters = SEARCH_RADIUS_METERS) {
+      if (USE_MOCK) {
+        // Prosty mock – struktura proponowana dla backendu hackathonu
+        await new Promise(r => setTimeout(r, 400)); // udawaj opóźnienie
+        return {
+          stops: [
+            {
+              id: "WR-1001",
+              name: "Dworzec Główny",
+              lat: 51.0987, lon: 17.0362,
+              departures: [
+                { line: "D", headsign: "Dworzec Nadodrze", departure_time: addMinutes(departureTimeISO, 5) },
+                { line: "2", headsign: "Biskupin", departure_time: addMinutes(departureTimeISO, 9) }
+              ]
+            },
+            {
+              id: "WR-1002",
+              name: "Arkady (Capitol)",
+              lat: 51.0999, lon: 17.0289,
+              departures: [
+                { line: "31", headsign: "Kromera", departure_time: addMinutes(departureTimeISO, 7) }
+              ]
+            }
+          ]
+        };
+      }
+
+      // PRZYKŁADOWE wywołanie – dopasuj do faktycznego API:
+      // Zakładamy: GET ?lat=...&lon=...&radius=1000&departureTime=ISO
+      const url = new URL(API_BASE_URL);
+      url.searchParams.set("lat", lat);
+      url.searchParams.set("lon", lon);
+      url.searchParams.set("radius", radiusMeters);
+      url.searchParams.set("departureTime", departureTimeISO); // ISO 8601
+
+      const res = await fetch(url.toString(), { method: "GET" });
+      if (!res.ok) throw new Error("Błąd API: " + res.status);
+      return res.json();
+    }
+
+    function addMinutes(iso, mins) {
+      const d = new Date(iso);
+      d.setMinutes(d.getMinutes() + mins);
+      return d.toISOString();
+    }
+
+    // ===== WYŚWIETLANIE WYNIKÓW =====
+    function renderResults(data) {
+      const container = document.getElementById("results");
+      container.innerHTML = "";
+      if (!data || !data.stops || data.stops.length === 0) {
+        container.innerHTML = "<div>Brak wyników w promieniu 1 km.</div>";
+        return;
+      }
+
+      // Usuń stare markery przystanków (zostaw start/cel)
+      stopLayer.clearLayers();
+
+      data.stops.forEach((stop) => {
+        // Marker przystanku
+        const m = L.marker([stop.lat, stop.lon]).bindPopup(`<b>${stop.name}</b>`);
+        stopLayer.addLayer(m);
+
+        // Wiersz wyników
+        const div = document.createElement("div");
+        div.className = "result";
+
+        const title = document.createElement("div");
+        title.innerHTML = `<b>Przystanek:</b> ${stop.name}`;
+        div.appendChild(title);
+
+        if (Array.isArray(stop.departures) && stop.departures.length > 0) {
+          stop.departures.forEach(dep => {
+            // Format czasu lokalnie
+            const dt = new Date(dep.departure_time);
+            const hh = dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+            const linePill = `<span class="pill">Linia ${dep.line}</span>`;
+            const info = document.createElement("div");
+            info.innerHTML = `${linePill} kierunek: <b>${dep.headsign}</b> &nbsp;–&nbsp; odjazd: <b>${hh}</b>`;
+            div.appendChild(info);
+          });
+        } else {
+          const no = document.createElement("div");
+          no.className = "small";
+          no.textContent = "Brak odjazdów dla tego przystanku w podanym czasie.";
+          div.appendChild(no);
+        }
+
+        container.appendChild(div);
+      });
+    }
+
+    // Warstwa dla markerów przystanków
+    const stopLayer = L.layerGroup().addTo(map);
+
+    // ===== OBSŁUGA PRZYCISKU „Szukaj odjazdów” =====
+    document.getElementById("btnSearch").addEventListener("click", async () => {
+      const lat = parseFloat(document.getElementById("startLat").value);
+      const lon = parseFloat(document.getElementById("startLon").value);
+      const dtVal = document.getElementById("departureTime").value;
+
+      if (Number.isNaN(lat) || Number.isNaN(lon)) {
+        alert("Podaj lub wybierz punkt START na mapie.");
+        return;
+      }
+      if (!dtVal) {
+        alert("Ustaw czas odjazdu.");
+        return;
+      }
+
+      // datetime-local -> ISO z uwzględnieniem lokalnej strefy
+      const departureISO = new Date(dtVal);
+      const departureISOAdj = new Date(departureISO.getTime() - (departureISO.getTimezoneOffset() * 60000)).toISOString();
+
+      // UI blokada
+      const btn = document.getElementById("btnSearch");
+      btn.disabled = true;
+      btn.textContent = "Szukam...";
+
+      try {
+        const data = await fetchDepartures(lat, lon, departureISOAdj, SEARCH_RADIUS_METERS);
+        renderResults(data);
+        // Dopasuj widok do okręgu jeśli ustawiony
+        if (radiusCircle) map.fitBounds(radiusCircle.getBounds());
+      } catch (err) {
+        console.error(err);
+        alert("Nie udało się pobrać danych z API.");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Szukaj odjazdów w promieniu 1 km od START";
+      }
+       });
+  </script>
 </body>
-</html>
