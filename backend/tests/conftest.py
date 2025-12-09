@@ -4,10 +4,11 @@ import os
 import sqlite3
 import pytest
 from datetime import date
+from server import app
 
 # Change this import to match your app module
 # e.g., from server import app as flask_app
-from app import app as flask_app  # <-- adjust if needed
+# from app import app as flask_app  # <-- adjust if needed
 
 DB_TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS stops (
