@@ -1,0 +1,4 @@
+stop_id,stop_name,stop_lat,stop_lon
+STOP_A,Sample Stop A,51.1079,17.0385
+STOP_B,Sample Stop B,51.11,17.05
+STOP_C,Sample Stop C,51.105,17.03

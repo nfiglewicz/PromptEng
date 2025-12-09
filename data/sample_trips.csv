@@ -1,0 +1,3 @@
+trip_id,route_id,trip_headsign
+TRIP_1,A,Sample Headsign A
+TRIP_2,B,Sample Headsign B
